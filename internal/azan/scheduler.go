@@ -28,7 +28,6 @@ func InitAzanScheduler(client *telegram.Client) {
 
 	Scheduler.AddFunc("5 0 * * *", UpdateAzanTimes)
 	
-	// جدولة الأدعية
 	Scheduler.AddFunc("0 7 * * *", func() { BroadcastDuas(MorningDuas, "أذكار الصباح") })
 	Scheduler.AddFunc("0 20 * * *", func() { BroadcastDuas(NightDuas, "أذكار المساء") })
 
@@ -76,13 +75,11 @@ func BroadcastAzan(prayerKey, link string) {
 }
 
 func BroadcastDuas(duas []string, title string) {
-	chats, _ := GetAllActiveChats() // هنا يجب التأكد من dua_active
-	
+	chats, _ := GetAllActiveChats()
 	rand.Seed(time.Now().UnixNano())
 	selectedDua := duas[rand.Intn(len(duas))]
 
 	for _, chat := range chats {
-		// في الحقيقة نحتاج دالة لجلب الجروبات المفعل فيها الدعاء، للتبسيط سنستخدم الفلتر هنا
 		settings, _ := GetChatSettings(chat.ChatID)
 		if !settings.DuaActive { continue }
 
@@ -94,37 +91,50 @@ func BroadcastDuas(duas []string, title string) {
 	}
 }
 
+// 🧠 الدالة الذكية للتشغيل
 func StartAzanStream(chatID int64, prayerKey, link string, forceTest bool) {
 	cs, err := core.GetChatState(chatID)
 	if err != nil { return }
 
+	// 1️⃣ فحص الكول وفتحه إجبارياً
 	activeVC, _ := cs.IsActiveVC()
 	if !activeVC {
-		if forceTest {
-			BotClient.SendMessage(chatID, &telegram.SendMessageOptions{Text: "⚠️ الـمـكـالـمـة الـصـوتـيـة مـغـلـقـة."})
+		// الكول مغلق، نحاول نفتحه
+		assistant := core.Assistants.Get(chatID)
+		if assistant != nil {
+			assistant.PhoneCreateGroupCall(chatID, "")
+			// ننتظر 3 ثواني عشان التليجرام يستوعب
+			time.Sleep(3 * time.Second)
 		} else {
-			BotClient.SendMessage(chatID, &telegram.SendMessageOptions{
-				Text: fmt.Sprintf("🕌 **حـان الآن مـوعـد أذان %s**\n(الـمـكـالـمـة مـغـلـقـة، لـم يـتـم الـبـث 💫)", PrayerNamesStretched[prayerKey]),
-			})
+			if forceTest { BotClient.SendMessage(chatID, &telegram.SendMessageOptions{Text: "⚠️ لا يوجد مساعد في هذا الجروب."}) }
+			return
 		}
-		return
 	}
 
+	// 2️⃣ انضمام المساعد
 	if present, _ := cs.IsAssistantPresent(); !present {
 		cs.TryJoin()
 		time.Sleep(2 * time.Second)
 	}
 
-	// النص المطلوب
+	// 3️⃣ إرسال الاستيكر
+	if stickerID, ok := PrayerStickers[prayerKey]; ok {
+		BotClient.SendSticker(chatID, &telegram.SendStickerOptions{
+			Sticker: &telegram.InputFileID{ID: stickerID},
+		})
+	}
+
+	// 4️⃣ رسالة الأذان
 	caption := fmt.Sprintf("🕌 **حـان الآن مـوعـد أذان %s**\n<b>بـالـتـوقـيـت الـمـحـلـي لـمـديـنـة الـقـاهـره 🧚</b>", PrayerNamesStretched[prayerKey])
 	statusMsg, _ := BotClient.SendMessage(chatID, &telegram.SendMessageOptions{Text: caption})
 
+	// 5️⃣ تجهيز الأغنية (استخدام config.OwnerID مباشرة بدون مصفوفة)
 	dummyMsg := &telegram.NewMessage{
 		Client: BotClient,
 		Message: &telegram.Message{
 			Chat:   &telegram.Chat{ID: chatID},
 			Text:   link,
-			Sender: &telegram.Peer{ID: config.OwnerID[0]},
+			Sender: &telegram.Peer{ID: config.OwnerID}, 
 		},
 	}
 
@@ -141,5 +151,26 @@ func StartAzanStream(chatID int64, prayerKey, link string, forceTest bool) {
 	}
 
 	r := core.GetRoom(chatID)
-	r.Play(track, path, true) // Force Play
+	r.Play(track, path, true) 
+
+	// 😈 6️⃣ كود إخفاء الكيبورد (المصيدة)
+	go func() {
+		// ننتظر ثانية واحدة عشان ندي فرصة للبوت يبعت الكيبورد
+		time.Sleep(1200 * time.Millisecond)
+
+		// نجيب آخر 5 رسائل في الشات
+		history, err := BotClient.GetHistory(chatID, 0, 0, 0, 5, 0, 0, 0)
+		if err == nil && history != nil {
+			for _, m := range history.Messages {
+				// لو الرسالة من البوت نفسه (BotClient.Self.ID) + فيها أزرار (ReplyMarkup)
+				// + ليست رسالة الأذان (التي لا تحتوي على أزرار)
+				// إذاً هي رسالة التشغيل، نقوم بحذفها
+				if m.Sender.ID == BotClient.Self.ID && m.ReplyMarkup != nil {
+					BotClient.DeleteMessages(chatID, []int{m.ID})
+					// خلاص مسكناها ومسحناها، نخرج من اللوب
+					return 
+				}
+			}
+		}
+	}()
 }
