@@ -12,13 +12,16 @@ RUN apt-get update && \
         zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
 
-# 👇 تم التعديل هنا: حذفنا go.sum من الأمر عشان البوت يصنعه بنفسه
+# 👇 1. ننسخ ملف go.mod الأول
 COPY go.mod ./
-RUN go mod tidy
 
-COPY install.sh ./
+# 👇 2. ننسخ باقي ملفات المشروع عشان go mod tidy يشوف الكود
 COPY . .
 
+# 👇 3. دلوقتي نشغل go mod tidy عشان يحمل المكتبات الناقصة
+RUN go mod tidy
+
+# 👇 4. نكمل بناء التطبيق
 RUN chmod +x install.sh && \
     ./install.sh -n --quiet --skip-summary && \
     CGO_ENABLED=1 go build -v -trimpath -ldflags="-w -s" -o app ./cmd/app/
