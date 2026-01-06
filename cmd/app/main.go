@@ -37,13 +37,11 @@ import (
 	"os"
 
 	"github.com/Laky-64/gologging"
-	"github.com/amarnathcjd/gogram/telegram" // 1️⃣ مكتبة التليجرام المطلوبة
 
 	"main/internal/config"
 	"main/internal/core"
 	"main/internal/database"
 	"main/internal/modules"
-	"main/internal/modules/azan" // 2️⃣ موديول الأذان الجديد
 )
 
 func main() {
@@ -76,24 +74,6 @@ func main() {
 	}
 
 	modules.Init(core.Bot, core.Assistants)
-
-	// ---------------------------------------------------------
-	// ⬇️⬇️ 3️⃣ بداية كود تشغيل الأذان ⬇️⬇️
-	
-	gologging.Info("🕌 Starting Azan System...")
-	
-	// تشغيل المجدول الزمني (للمواقيت والأدعية)
-	azan.InitAzanScheduler(core.Bot)
-
-	// تفعيل مستجيب الأوامر (Command Handler)
-	core.Bot.AddHandler(telegram.NewMessageHandler(azan.CommandHandler, telegram.FilterChat))
-	
-	// تفعيل مستجيب الأزرار (Callback Handler) - مهم للوحة التحكم
-	core.Bot.AddHandler(telegram.NewCallbackQueryHandler(azan.CallbackHandler))
-
-	// ⬆️⬆️ نهاية كود الأذان ⬆️⬆️
-	// ---------------------------------------------------------
-
 	core.Bot.Idle()
 }
 
