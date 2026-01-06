@@ -1,4 +1,4 @@
-FROM golang:1.25.5-bookworm AS builder
+FROM golang:1.22-bookworm AS builder
 
 WORKDIR /build
 
@@ -12,7 +12,8 @@ RUN apt-get update && \
         zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
 
-COPY go.mod go.sum ./
+# 👇 تم التعديل هنا: حذفنا go.sum من الأمر عشان البوت يصنعه بنفسه
+COPY go.mod ./
 RUN go mod tidy
 
 COPY install.sh ./
