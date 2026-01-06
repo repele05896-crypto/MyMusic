@@ -141,6 +141,7 @@ func StartAzanStream(chatID int64, prayerKey, link string, forceTest bool) {
 	tracks, err := platforms.GetTracks(dummyMsg, false)
 	if err != nil || len(tracks) == 0 { return }
 
+	// 👇 هنا كان الخطأ، وتم التصحيح
 	track := tracks[0](track.Requester) = "خـدمـة الأذان"
 
 	ctx := context.Background()
