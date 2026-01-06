@@ -11,11 +11,17 @@ require (
 	github.com/showwin/speedtest-go v1.7.10
 	github.com/traefik/yaegi v0.16.1
 	github.com/zmb3/spotify/v2 v2.4.3
-	go.mongodb.org/mongo-driver/v2 v2.4.1
+	
+	// 👇 تم تعديل هذه المكتبات لتناسب كود الأذان
+	go.mongodb.org/mongo-driver v1.16.0
+	github.com/robfig/cron/v3 v3.0.1
+
 	golang.org/x/oauth2 v0.34.0
 	golang.org/x/text v0.32.0
 	gopkg.in/yaml.v3 v3.0.1
 	resty.dev/v3 v3.0.0-beta.6
+	
+	// Indirect dependencies
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/colorprofile v0.4.1 // indirect
 	github.com/charmbracelet/lipgloss v1.1.0 // indirect
@@ -39,7 +45,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.16 // indirect
 	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
-	github.com/xdg-go/scram v1.2.0 // indirect
+	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
